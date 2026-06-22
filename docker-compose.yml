@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: citemd-postgres
+    environment:
+      POSTGRES_USER: citemd
+      POSTGRES_PASSWORD: citemd
+      POSTGRES_DB: citemd
+    ports:
+      - "5432:5432"
+    volumes:
+      - citemd_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citemd -d citemd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  citemd_pgdata:

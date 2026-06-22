@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.env.*
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Data and artifacts (never commit corpora, embeddings, or eval dumps)
+data/
+!data/.gitkeep
+artifacts/
+*.parquet
+*.faiss
+*.duckdb
+models/
+
+# Internal planning doc (personal career framing; not for the public repo)
+PROJECT_BRIEF.md
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "citemd"
+version = "0.1.0"
+description = "Clinical-evidence question answering with grounded citations and calibrated abstention, evaluated on MIRAGE."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Rishika Vaish" }]
+keywords = ["rag", "medical", "retrieval", "citations", "abstention", "mirage", "pgvector"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core runtime deps are intentionally light so the pure-logic core (chunking, RRF,
+# metrics, MIRAGE parsing) installs and tests anywhere with no GPU or DB.
+dependencies = [
+    "typer>=0.9",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "httpx>=0.26",
+]
+
+[project.optional-dependencies]
+# Postgres + pgvector hybrid index.
+db = [
+    "psycopg[binary]>=3.1",
+    "pgvector>=0.2.5",
+]
+# CPU embeddings + cross-encoder reranking (heavy; pulls torch).
+ml = [
+    "sentence-transformers>=2.5",
+    "numpy>=1.24",
+]
+# Ingestion parsers for PDF/HTML/Markdown + PubMed.
+ingest = [
+    "pypdf>=4.0",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+]
+# Everything needed to actually run the full pipeline end to end.
+all = [
+    "citemd[db,ml,ingest]",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/rishika7006/citemd"
+Repository = "https://github.com/rishika7006/citemd"
+
+[project.scripts]
+citemd = "citemd.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+citemd = ["db/*.sql"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = [
+    "B008",   # typer uses function calls in argument defaults by design
+    "UP045",  # keep Optional[X]: Pydantic v2 cannot eval `X | None` strings on Python 3.9
+    "UP037",  # keep quoted forward refs for lazily-imported optional types
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
