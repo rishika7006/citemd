@@ -48,9 +48,17 @@ ingest = [
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
 ]
+# Generation through an OpenAI-compatible endpoint (KVGate by default).
+llm = [
+    "openai>=1.30",
+]
+# Evaluation charts.
+viz = [
+    "matplotlib>=3.7",
+]
 # Everything needed to actually run the full pipeline end to end.
 all = [
-    "citemd[db,ml,ingest]",
+    "citemd[db,ml,ingest,llm,viz]",
 ]
 dev = [
     "pytest>=8.0",

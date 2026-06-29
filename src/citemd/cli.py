@@ -108,7 +108,7 @@ def query(
         "hybrid", "--retriever", help="hybrid | vector | bm25 (for ablation)."
     ),
 ) -> None:
-    """Retrieve evidence for a question (no generation yet; that is milestone 2)."""
+    """Retrieve and rank evidence for a question (retrieval only; use `ask` to generate)."""
     results = _retrieve(retriever, text, k)
     if not results:
         typer.echo("No results. Is the index populated?")
@@ -119,6 +119,45 @@ def query(
         typer.echo(f"\n[{i}] score={r.score:.4f}  {loc}{page}  ({r.source_id})")
         snippet = r.text.strip().replace("\n", " ")
         typer.echo(f"    {snippet[:280]}")
+
+
+@app.command()
+def ask(
+    text: str = typer.Argument(..., help="Clinical question to answer with cited evidence."),
+    retriever: str = typer.Option("hybrid", "--retriever", help="hybrid | vector | bm25."),
+    rerank: bool = typer.Option(True, "--rerank/--no-rerank", help="Cross-encoder reranking."),
+    k: int = typer.Option(5, "--k", help="Passages given to the model."),
+    abstain_threshold: Optional[float] = typer.Option(
+        None, "--abstain-threshold", help="Abstain when confidence < this (0..1)."
+    ),
+) -> None:
+    """Answer a question with grounded citations via the LLM backend (KVGate by default).
+
+    Generation calls the configured backend and may incur API cost. Set CITEMD_LLM_* to point
+    at your endpoint/key. Research and evaluation only; not for clinical use.
+    """
+    from citemd.pipeline import PipelineConfig, answer, make_default_llm
+
+    config = PipelineConfig(
+        retriever=retriever,
+        use_rerank=rerank,
+        top_k=k,
+        allow_abstain=True,
+        abstain_threshold=abstain_threshold,
+    )
+    result = answer(text, make_default_llm(), config=config)
+    if result.abstained:
+        typer.echo(f"ABSTAINED ({result.abstain_reason}); confidence={result.confidence:.2f}")
+        typer.echo("Insufficient evidence in the retrieved passages to answer reliably.")
+        raise typer.Exit(code=0)
+    typer.echo(f"\n{result.text or result.option}\n")
+    typer.echo(f"confidence={result.confidence:.2f}  model={result.model}")
+    if result.citations:
+        typer.echo("Citations:")
+        for c in result.citations:
+            loc = " / ".join(part for part in [c.title, c.section] if part)
+            page = f" p.{c.page}" if c.page else ""
+            typer.echo(f"  [{c.marker}] {loc}{page} ({c.source_id})")
 
 
 def _retrieve(retriever: str, text: str, k: int):
@@ -192,6 +231,83 @@ def eval_retrieval(
         if key == "n":
             continue
         typer.echo(f"  {key}: {val:.4f}")
+
+
+@eval_app.command("qa")
+def eval_qa(
+    dataset: str = typer.Option(..., "--dataset", help="medqa|medmcqa|pubmedqa|bioasq|mmlu."),
+    limit: Optional[int] = typer.Option(None, "--limit", help="Evaluate first N questions only."),
+    retriever: str = typer.Option("hybrid", "--retriever", help="hybrid | vector | bm25."),
+    rerank: bool = typer.Option(True, "--rerank/--no-rerank", help="Cross-encoder reranking."),
+    out: Optional[str] = typer.Option(None, "--out", help="JSONL artifact (append + resume)."),
+    abstain_fraction: float = typer.Option(
+        0.2, "--abstain-fraction", help="Report metrics abstaining on this riskiest fraction."
+    ),
+) -> None:
+    """Run the QA pipeline over a MIRAGE dataset and report accuracy + the abstention tradeoff.
+
+    Calls the LLM backend once per question (may incur API cost). Results are cached to --out
+    and re-runs resume, so a stopped run is never repeated.
+    """
+    from citemd.eval.mirage import load_dataset
+    from citemd.eval.qa import run_qa, score_records, selective_items
+    from citemd.eval.selective import summarize_abstention
+    from citemd.pipeline import PipelineConfig, make_default_llm
+
+    items = load_dataset(dataset, get_settings().data_dir, limit=limit)
+    config = PipelineConfig(retriever=retriever, use_rerank=rerank, allow_abstain=False)
+    out_path = out or f"{get_settings().artifacts_dir}/qa_{dataset}_{retriever}.jsonl"
+
+    typer.echo(
+        f"Evaluating {len(items)} {dataset} questions "
+        f"(retriever={retriever}, rerank={rerank})..."
+    )
+    records = run_qa(items, make_default_llm(), config=config, out_path=out_path)
+    m = score_records(records)
+    typer.echo(
+        f"\nn={m['n']}  accuracy={m['accuracy']:.3f}  "
+        f"coverage={m['coverage']:.3f}  accuracy_answered={m['accuracy_answered']:.3f}"
+    )
+    abst = summarize_abstention(selective_items(records), abstain_fraction)
+    typer.echo(
+        f"abstain riskiest {int(round(abstain_fraction * 100))}%: "
+        f"error {abst['baseline_error']:.3f} -> {abst['kept_error']:.3f} "
+        f"({abst['error_reduction_rel'] * 100:.1f}% relative reduction) "
+        f"at coverage {abst['coverage']:.2f}"
+    )
+
+
+@eval_app.command("ablation")
+def eval_ablation(
+    dataset: str = typer.Option(..., "--dataset", help="MIRAGE dataset to run the ablation on."),
+    limit: Optional[int] = typer.Option(None, "--limit", help="Use only the first N questions."),
+    out_dir: Optional[str] = typer.Option(None, "--out-dir", help="Directory for QA artifacts."),
+    abstain_fraction: float = typer.Option(0.2, "--abstain-fraction", help="Abstention cutoff."),
+    charts: bool = typer.Option(False, "--charts", help="Also write evaluation charts."),
+) -> None:
+    """Run the full vector -> hybrid -> +rerank -> +abstention ablation and print the table."""
+    from citemd.eval.ablation import format_table, run_ablation
+    from citemd.eval.mirage import load_dataset
+    from citemd.eval.qa import selective_items
+    from citemd.pipeline import make_default_llm
+
+    items = load_dataset(dataset, get_settings().data_dir, limit=limit)
+    base = out_dir or f"{get_settings().artifacts_dir}/ablation_{dataset}"
+    typer.echo(f"Running ablation on {len(items)} {dataset} questions...")
+    result = run_ablation(
+        items, make_default_llm(), out_dir=base, abstain_fraction=abstain_fraction
+    )
+    typer.echo("\n" + format_table(result["rows"]))
+
+    if charts:
+        from citemd.eval.charts import plot_ablation, plot_risk_coverage
+
+        last = result["derived_from"]
+        rc = plot_risk_coverage(
+            selective_items(result["records"][last]), f"{base}/risk_coverage.png"
+        )
+        ab = plot_ablation(result["rows"], f"{base}/ablation.png")
+        typer.echo(f"\nCharts: {rc}  {ab}")
 
 
 if __name__ == "__main__":  # pragma: no cover

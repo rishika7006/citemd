@@ -53,3 +53,37 @@ class RetrievedChunk(BaseModel):
     uri: str = ""
     score: float = 0.0
     retriever: str = Field(default="hybrid", description="vector | bm25 | hybrid | rerank")
+
+
+class Citation(BaseModel):
+    """A single citation linking a span of the answer to a retrieved chunk."""
+
+    marker: int = Field(description="1-based passage number as shown to the model, e.g. [2].")
+    chunk_id: str
+    source_id: str
+    title: str = ""
+    section: Optional[str] = None
+    page: Optional[int] = None
+    uri: str = ""
+
+
+class CitedAnswer(BaseModel):
+    """The pipeline's output for one question.
+
+    For multiple-choice evaluation, ``option`` is the chosen option key (e.g. "B"); for
+    open-ended use, ``text`` carries the prose answer. ``abstained`` is True when the system
+    declined to answer (either the model judged the evidence insufficient or the calibrated
+    confidence gate fired). ``confidence`` is the scalar used by the selective-prediction
+    curve; it is a heuristic signal, not a calibrated probability, and is documented as such.
+    """
+
+    question: str
+    text: str = ""
+    option: Optional[str] = Field(default=None, description="Chosen option key for MCQ items.")
+    abstained: bool = False
+    abstain_reason: str = ""
+    confidence: float = 0.0
+    citations: list[Citation] = Field(default_factory=list)
+    contexts: list[RetrievedChunk] = Field(default_factory=list)
+    model: str = ""
+    raw_response: str = ""

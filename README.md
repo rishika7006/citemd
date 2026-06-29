@@ -16,9 +16,13 @@ directly as a fallback.
 
 ## Status
 
-Milestone 1 in progress: ingestion, hybrid index, and the MIRAGE evaluation set. The
-generation pipeline, abstention gate, headline eval, UI, and observability arrive in later
-milestones. See [the roadmap](#roadmap).
+Milestones 1 and 2 are implemented: ingestion, the hybrid index, the MIRAGE evaluation set,
+and the full query pipeline (retrieve, rerank, cite, abstain) with the QA/abstention
+evaluation harness and the ablation. The UI, observability, and multimodal retrieval arrive
+in milestone 3. See [the roadmap](#roadmap).
+
+Headline numbers are produced by running the harness against a live generation backend and
+are not yet committed; the methodology and commands that produce them are below.
 
 ## What makes it different
 
@@ -67,7 +71,9 @@ pip install -e ".[dev]"       # test and lint tooling
 | `db`      | `psycopg`, `pgvector` (hybrid index)                 |
 | `ml`      | `sentence-transformers`, `numpy` (embeddings/rerank) |
 | `ingest`  | `pypdf`, `beautifulsoup4`, `lxml` (parsers)          |
-| `all`     | `db` + `ml` + `ingest`                               |
+| `llm`     | `openai` (OpenAI-compatible generation client)       |
+| `viz`     | `matplotlib` (evaluation charts)                     |
+| `all`     | `db` + `ml` + `ingest` + `llm` + `viz`               |
 
 ## Quickstart
 
@@ -80,12 +86,19 @@ citemd db init                      # create schema and extensions
 citemd ingest pubmed --query "metformin cardiovascular outcomes" --max 200
 citemd ingest files ./data/guidelines/*.pdf
 
-# 3. Retrieve
+# 3. Retrieve evidence (no generation)
 citemd query "What is the first-line treatment for type 2 diabetes?" --k 5
 
-# 4. Load the MIRAGE evaluation sets
+# 4. Answer with grounded citations (needs a generation backend; see Configuration)
+citemd ask "Does metformin reduce cardiovascular mortality in type 2 diabetes?"
+
+# 5. Load the MIRAGE evaluation sets and score retrieval on a labeled set
 citemd eval fetch
-citemd eval retrieval --dataset pubmedqa --k 10
+citemd eval retrieval --labels examples/labels.example.jsonl --k 10 --retriever hybrid
+
+# 6. Run the QA + abstention eval and the ablation (calls the generation backend)
+citemd eval qa --dataset pubmedqa --limit 100 --abstain-fraction 0.2
+citemd eval ablation --dataset pubmedqa --limit 100 --charts
 ```
 
 ## Configuration
@@ -105,6 +118,33 @@ The LLM client is OpenAI-compatible and provider-agnostic. By default it routes 
 KVGate to `claude-sonnet-4-6` (best groundedness for the headline eval);
 `claude-haiku-4-5` is the cheap option for large MIRAGE sweeps.
 
+## Evaluation methodology
+
+CiteMD's headline is measured trustworthiness, so the method is stated plainly.
+
+- **Task.** MIRAGE is multiple choice across five datasets (MedQA, MedMCQA, PubMedQA,
+  BioASQ, MMLU-Med). The pipeline retrieves evidence and the model commits to an option
+  key; accuracy is exact-match against the gold key, the standard MIRAGE/MedRAG setup.
+- **Abstention as selective prediction.** Each arm runs once with answers forced
+  (`allow_abstain=False`), recording a confidence signal per question. The risk-coverage
+  curve is then derived offline: abstaining on the least-confident questions removes
+  predictions first, and we report how the error rate among answered questions falls as
+  coverage drops. The headline ("cut errors by X% by abstaining on the riskiest Y%") is a
+  single point read off that curve. This needs one generation run per retrieval setting, not
+  one per threshold.
+- **Confidence is a heuristic, not a calibrated probability.** The default signal is the
+  model's self-reported confidence; `--confidence-source` can blend it with the
+  cross-encoder score. We report the signal we use and never imply it is calibrated.
+- **Ablation.** vector-only -> hybrid -> +rerank -> +abstention, as a single table. The
+  first three differ only in retrieval; the fourth is the abstention operating point on the
+  +rerank arm.
+- **Honesty.** All numbers are real, measured, and reproducible from the commands above, and
+  the writeup will report where a technique does not help. Per-question results are cached to
+  JSONL so a run can be stopped, resumed, and audited.
+
+Running the QA and ablation commands calls a live generation backend and may incur API cost;
+they are intentionally not run in CI.
+
 ## Development
 
 ```bash
@@ -118,13 +158,13 @@ is covered by unit tests that need neither a GPU nor a database, so CI stays fas
 
 ## Roadmap
 
-1. **Ingestion + index + eval set (this milestone):** parse, chunk, embed a PubMed corpus
-   into pgvector and BM25; a working hybrid retriever; the MIRAGE eval sets loaded with
+1. **Ingestion + index + eval set (done):** parse, chunk, embed a PubMed corpus into
+   pgvector and BM25; a working hybrid retriever; the MIRAGE eval sets loaded with
    retrieval-quality metrics.
-2. **Pipeline + headline eval:** retrieve, rerank, cite, abstain; the faithfulness,
-   hallucination, and abstention harness; the ablation table and charts.
+2. **Pipeline + headline eval (done):** retrieve, rerank, cite, abstain; the QA and
+   abstention harness with the selective-prediction curve; the ablation table and charts.
 3. **Polish + ship:** multimodal table/figure retrieval; Next.js cited-answer UI;
-   Prometheus and Grafana; Docker and CI; a demo deployment.
+   Prometheus and Grafana; Docker and CI; a demo deployment; the committed headline numbers.
 
 ## License
 
