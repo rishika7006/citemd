@@ -18,6 +18,7 @@ keeping the network fetch separate from a pure parser so the parser is unit-test
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 from typing import Optional
 
@@ -39,6 +40,10 @@ class QuestionItem(BaseModel):
     question: str
     options: dict[str, str] = Field(default_factory=dict)
     answer: str = Field(default="", description="Gold answer; option key or yes/no/maybe.")
+    pmids: list[str] = Field(
+        default_factory=list,
+        description="Source PubMed IDs (PubMedQA/BioASQ); used to ingest gold evidence.",
+    )
     metadata: dict = Field(default_factory=dict)
 
 
@@ -67,6 +72,10 @@ def parse_benchmark(data: dict) -> dict[str, list[QuestionItem]]:
             answer = entry.get("answer")
             if answer is None:
                 answer = entry.get("answer_idx", "")
+            raw_pmids = entry.get("PMID") or entry.get("pmid") or []
+            if not isinstance(raw_pmids, list):
+                raw_pmids = [raw_pmids]
+            pmids = [str(p) for p in raw_pmids if p not in (None, "")]
             items.append(
                 QuestionItem(
                     dataset=dataset,
@@ -74,6 +83,7 @@ def parse_benchmark(data: dict) -> dict[str, list[QuestionItem]]:
                     question=str(question),
                     options=options,
                     answer=str(answer),
+                    pmids=pmids,
                 )
             )
         out[dataset] = items
@@ -115,8 +125,17 @@ def load_dataset(
     data_dir: str | Path,
     *,
     limit: Optional[int] = None,
+    sample: Optional[int] = None,
+    seed: int = 0,
 ) -> list[QuestionItem]:
-    """Load a previously fetched MIRAGE dataset from local JSONL."""
+    """Load a previously fetched MIRAGE dataset from local JSONL.
+
+    ``sample`` draws a deterministic random subset of that size (seeded by ``seed``) and is
+    the right way to take a representative slice: the MIRAGE datasets are class-ordered (e.g.
+    every PubMedQA "yes" precedes every "no"), so ``limit`` (the first N rows) yields a
+    single-class slice and must not be used for evaluation. ``limit`` is kept only for quick,
+    order-preserving debugging.
+    """
     path = _dataset_path(data_dir, dataset)
     if not path.exists():
         raise FileNotFoundError(
@@ -129,6 +148,8 @@ def load_dataset(
             if not line:
                 continue
             items.append(QuestionItem(**json.loads(line)))
-            if limit is not None and len(items) >= limit:
+            if sample is None and limit is not None and len(items) >= limit:
                 break
+    if sample is not None and sample < len(items):
+        items = random.Random(seed).sample(items, sample)
     return items

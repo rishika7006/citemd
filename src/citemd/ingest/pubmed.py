@@ -10,6 +10,7 @@ per second. Set CITEMD via an API key in the environment if you need higher thro
 
 from __future__ import annotations
 
+import time
 import xml.etree.ElementTree as ET
 
 import httpx
@@ -17,6 +18,10 @@ import httpx
 from citemd.models import Document
 
 EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+
+# NCBI allows ~3 requests/sec unauthenticated, ~10/sec with an API key. efetch URLs also
+# have a practical length limit, so PMIDs are fetched in batches rather than one giant call.
+_EFETCH_BATCH = 200
 
 
 def parse_pubmed_xml(xml_text: str) -> list[Document]:
@@ -83,17 +88,8 @@ def search_pmids(
     return resp.json().get("esearchresult", {}).get("idlist", [])
 
 
-def fetch_documents(
-    query: str,
-    *,
-    max_results: int = 200,
-    api_key: str | None = None,
-    timeout: float = 60.0,
-) -> list[Document]:
-    """Search PubMed and fetch abstracts as Documents."""
-    pmids = search_pmids(query, max_results=max_results, api_key=api_key, timeout=timeout)
-    if not pmids:
-        return []
+def _efetch(pmids: list[str], *, api_key: str | None, timeout: float) -> list[Document]:
+    """Fetch one batch of PMIDs via efetch and parse them into Documents."""
     params = {
         "db": "pubmed",
         "id": ",".join(pmids),
@@ -106,3 +102,50 @@ def fetch_documents(
     resp = httpx.get(f"{EUTILS_BASE}/efetch.fcgi", params=params, timeout=timeout)
     resp.raise_for_status()
     return parse_pubmed_xml(resp.text)
+
+
+def fetch_by_pmids(
+    pmids: list[str],
+    *,
+    api_key: str | None = None,
+    timeout: float = 60.0,
+    delay: float = 0.34,
+) -> list[Document]:
+    """Fetch abstracts for an explicit list of PMIDs, batching efetch politely.
+
+    Used to ingest the source literature behind PubMedQA/BioASQ questions so retrieval has
+    the gold evidence to find (mirroring MedRAG-style retrieval over a full PubMed snapshot).
+    """
+    unique = list(dict.fromkeys(str(p) for p in pmids if str(p)))
+    docs: list[Document] = []
+    for start in range(0, len(unique), _EFETCH_BATCH):
+        batch = unique[start : start + _EFETCH_BATCH]
+        docs.extend(_efetch(batch, api_key=api_key, timeout=timeout))
+        if start + _EFETCH_BATCH < len(unique):
+            time.sleep(delay)
+    return docs
+
+
+def fetch_documents(
+    query: str,
+    *,
+    max_results: int = 200,
+    api_key: str | None = None,
+    timeout: float = 60.0,
+    delay: float = 0.34,
+) -> list[Document]:
+    """Search PubMed and fetch abstracts as Documents, batching efetch for large queries.
+
+    ``delay`` is the courtesy pause between requests to stay under NCBI's rate limit; with an
+    API key it can safely be lowered.
+    """
+    pmids = search_pmids(query, max_results=max_results, api_key=api_key, timeout=timeout)
+    if not pmids:
+        return []
+    docs: list[Document] = []
+    for start in range(0, len(pmids), _EFETCH_BATCH):
+        batch = pmids[start : start + _EFETCH_BATCH]
+        docs.extend(_efetch(batch, api_key=api_key, timeout=timeout))
+        if start + _EFETCH_BATCH < len(pmids):
+            time.sleep(delay)
+    return docs

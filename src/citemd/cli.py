@@ -72,6 +72,45 @@ def ingest_pubmed(
     typer.echo(f"Loaded {counts['documents']} documents, {counts['chunks']} chunks.")
 
 
+@ingest_app.command("mirage-sources")
+def ingest_mirage_sources(
+    datasets: str = typer.Option(
+        "pubmedqa,bioasq", "--datasets", help="Comma-separated MIRAGE datasets with PMIDs."
+    ),
+) -> None:
+    """Ingest the source PubMed abstracts (by PMID) behind PubMedQA/BioASQ questions.
+
+    This makes the retrieval corpus contain the gold evidence for those questions (alongside
+    the broader distractor corpus), which is what makes the QA eval measure the RAG pipeline
+    rather than corpus coverage. Public abstracts only.
+    """
+    from citemd.eval.mirage import load_dataset
+    from citemd.ingest.loader import load_documents
+    from citemd.ingest.pubmed import fetch_by_pmids
+
+    data_dir = get_settings().data_dir
+    pmids: list[str] = []
+    for ds in [d.strip() for d in datasets.split(",") if d.strip()]:
+        try:
+            items = load_dataset(ds, data_dir)
+        except FileNotFoundError:
+            typer.echo(f"  {ds}: not fetched, skipping")
+            continue
+        ds_pmids = [p for it in items for p in it.pmids]
+        pmids.extend(ds_pmids)
+        typer.echo(f"  {ds}: {len(items)} questions -> {len(ds_pmids)} PMIDs")
+
+    unique = list(dict.fromkeys(pmids))
+    if not unique:
+        typer.echo("No PMIDs found. Did you run `citemd eval fetch`?")
+        raise typer.Exit(code=1)
+    typer.echo(f"Fetching {len(unique)} unique source abstracts...")
+    docs = fetch_by_pmids(unique)
+    typer.echo(f"Fetched {len(docs)} abstracts. Embedding and loading...")
+    counts = load_documents(docs)
+    typer.echo(f"Loaded {counts['documents']} documents, {counts['chunks']} chunks.")
+
+
 @ingest_app.command("files")
 def ingest_files(
     paths: list[str] = typer.Argument(..., help="Files or globs (.pdf, .html, .md, .txt)."),
@@ -236,7 +275,13 @@ def eval_retrieval(
 @eval_app.command("qa")
 def eval_qa(
     dataset: str = typer.Option(..., "--dataset", help="medqa|medmcqa|pubmedqa|bioasq|mmlu."),
-    limit: Optional[int] = typer.Option(None, "--limit", help="Evaluate first N questions only."),
+    sample: Optional[int] = typer.Option(
+        None, "--sample", help="Evaluate a deterministic random N-question subset (representative)."
+    ),
+    seed: int = typer.Option(0, "--seed", help="Sampling seed (reproducible subsets)."),
+    limit: Optional[int] = typer.Option(
+        None, "--limit", help="First N in file order (debug only; MIRAGE is class-ordered)."
+    ),
     retriever: str = typer.Option("hybrid", "--retriever", help="hybrid | vector | bm25."),
     rerank: bool = typer.Option(True, "--rerank/--no-rerank", help="Cross-encoder reranking."),
     out: Optional[str] = typer.Option(None, "--out", help="JSONL artifact (append + resume)."),
@@ -254,7 +299,7 @@ def eval_qa(
     from citemd.eval.selective import summarize_abstention
     from citemd.pipeline import PipelineConfig, make_default_llm
 
-    items = load_dataset(dataset, get_settings().data_dir, limit=limit)
+    items = load_dataset(dataset, get_settings().data_dir, limit=limit, sample=sample, seed=seed)
     config = PipelineConfig(retriever=retriever, use_rerank=rerank, allow_abstain=False)
     out_path = out or f"{get_settings().artifacts_dir}/qa_{dataset}_{retriever}.jsonl"
 
@@ -280,7 +325,13 @@ def eval_qa(
 @eval_app.command("ablation")
 def eval_ablation(
     dataset: str = typer.Option(..., "--dataset", help="MIRAGE dataset to run the ablation on."),
-    limit: Optional[int] = typer.Option(None, "--limit", help="Use only the first N questions."),
+    sample: Optional[int] = typer.Option(
+        None, "--sample", help="Deterministic random N-question subset (representative)."
+    ),
+    seed: int = typer.Option(0, "--seed", help="Sampling seed (reproducible subsets)."),
+    limit: Optional[int] = typer.Option(
+        None, "--limit", help="First N in file order (debug only; MIRAGE is class-ordered)."
+    ),
     out_dir: Optional[str] = typer.Option(None, "--out-dir", help="Directory for QA artifacts."),
     abstain_fraction: float = typer.Option(0.2, "--abstain-fraction", help="Abstention cutoff."),
     charts: bool = typer.Option(False, "--charts", help="Also write evaluation charts."),
@@ -291,7 +342,7 @@ def eval_ablation(
     from citemd.eval.qa import selective_items
     from citemd.pipeline import make_default_llm
 
-    items = load_dataset(dataset, get_settings().data_dir, limit=limit)
+    items = load_dataset(dataset, get_settings().data_dir, limit=limit, sample=sample, seed=seed)
     base = out_dir or f"{get_settings().artifacts_dir}/ablation_{dataset}"
     typer.echo(f"Running ablation on {len(items)} {dataset} questions...")
     result = run_ablation(

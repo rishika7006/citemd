@@ -4,7 +4,8 @@ from citemd.config import Settings
 
 
 def test_defaults():
-    s = Settings()
+    # Ignore any local .env so this asserts the code-defined defaults deterministically.
+    s = Settings(_env_file=None)
     assert s.embedding_dim == 384
     assert s.llm_model == "claude-sonnet-4-6"
     assert s.rrf_k == 60
