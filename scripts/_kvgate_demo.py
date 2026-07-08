@@ -11,9 +11,10 @@ import time
 from openai import OpenAI
 
 client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+_Q = "In one sentence, what is first-line pharmacotherapy for type 2 diabetes?"
 messages = [
     {"role": "system", "content": "You are a clinical-evidence assistant. Be concise."},
-    {"role": "user", "content": "In one sentence, what is first-line pharmacotherapy for type 2 diabetes?"},
+    {"role": "user", "content": _Q},
 ]
 
 
