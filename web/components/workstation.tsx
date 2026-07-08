@@ -207,9 +207,11 @@ export function Workstation({ answers }: { answers: AnswerRecord[] }) {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8">
-        <section className="space-y-5">
-          <h1 className="font-serif text-3xl leading-tight tracking-tight">{a.question}</h1>
+      <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 items-start">
+        <section className="min-w-0 space-y-5">
+          <h1 className="font-serif text-3xl leading-tight tracking-tight break-words">
+            {a.question}
+          </h1>
           <DecisionBar a={a} />
           {a.abstained ? (
             <div className="border-l-2 pl-4 py-1" style={{ borderColor: "var(--warm)" }}>
@@ -228,7 +230,7 @@ export function Workstation({ answers }: { answers: AnswerRecord[] }) {
           <KvgateStrip a={a} />
         </section>
 
-        <section>
+        <section className="min-w-0">
           <div className="text-xs uppercase tracking-wider text-muted mb-3">
             retrieved evidence · top {a.contexts.length}
           </div>
