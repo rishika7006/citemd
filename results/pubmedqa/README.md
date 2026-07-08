@@ -47,6 +47,21 @@ at high confidence.
 
 ![Reliability diagram](calibration.png)
 
+## Citation faithfulness
+
+Counting citations is not enough. An LLM judge checked whether each cited passage actually
+supports the chosen answer, on a 60-question sample (`citemd eval faithfulness`):
+
+| Metric | Value (95% CI) |
+|--------|----------------|
+| Citation coverage (answers citing at least one passage) | 98.3% (91.1-99.7) |
+| Answer support rate (at least one cited passage supports the answer) | 88.1% (77.5-94.1) |
+| Citation support rate (per cited passage) | 79.8% (70.6-86.7) |
+
+Caveat: the judge here is the same model that produced the answers, which tends to be
+optimistic. A judge at least as strong as the generator is preferable, and `--judge-model` sets
+it. This is reported as a measured property with that limitation stated, not as a guarantee.
+
 ## What did not help (reported honestly)
 
 - **Retrieval is not the bottleneck here.** The gold source abstract is retrieved into the top 5
@@ -56,6 +71,12 @@ at high confidence.
   entirely. The defensible statement is that these retrieval variants did not move accuracy on
   this dataset, not that any one is better or worse. The movement is in the reader and the
   abstention gate.
+
+## Error analysis
+
+A short read of the 75 wrong answers is in [error_analysis.md](error_analysis.md). The short
+version: every error had the evidence retrieved (no retrieval misses), and most errors are
+confident, especially over-committing to yes or no on questions whose gold answer is "maybe".
 
 ## Caveats
 

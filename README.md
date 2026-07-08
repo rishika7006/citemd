@@ -26,8 +26,9 @@ rigorously evaluated, reproducible artifact with a sharp trustworthiness and abs
   reports the resulting risk-coverage tradeoff. On PubMedQA, abstaining on the riskiest 20% cut
   the error rate by about 28% relative while still answering 80% of questions, and the
   confidence signal is reasonably calibrated (expected calibration error 0.067).
-- **Citation faithfulness, not just citation presence.** An LLM-judge checks whether the cited
-  passages actually support the answer.
+- **Citation faithfulness, not just citation presence.** An LLM judge checks whether the cited
+  passages actually support the answer. On a 60-question sample, 88% of answers had at least one
+  cited passage that supports them (with the caveat that the judge is the same model).
 - **Honest negative results.** The retrieval ablation shows where techniques did not help. On
   this dataset, BM25 fusion and cross-encoder reranking did not improve accuracy.
 - **An evidence workstation, not a chatbot.** The front end shows the cited answer, the
