@@ -35,6 +35,19 @@ rigorously evaluated, reproducible artifact with a sharp trustworthiness and abs
   supporting spans in each source, the abstention decision and confidence, the retrieval mode,
   and the serving path through KVGate.
 
+## App preview
+
+The Evidence Workstation: a cited answer with its supporting spans highlighted in each source, a
+decision bar (answer or abstention, confidence, retrieval mode, whether the gold source was
+retrieved), and the KVGate serving path.
+
+![Workstation view](docs/workstation-light.png)
+
+The Evaluation view: an interactive risk-coverage curve, calibration, and the retrieval ablation
+with confidence intervals.
+
+![Evaluation view](docs/evaluation-light.png)
+
 ## Architecture
 
 ```mermaid

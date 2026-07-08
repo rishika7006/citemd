@@ -49,7 +49,7 @@ export function Shell({
           <div className="flex items-baseline gap-4">
             <span className="font-serif text-2xl tracking-tight">CiteMD</span>
             <span className="hidden sm:inline text-sm text-muted">
-              clinical-evidence evidence workstation
+              clinical evidence workstation
             </span>
           </div>
           <div className="flex items-center gap-5">

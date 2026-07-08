@@ -21,7 +21,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CiteMD - clinical-evidence evidence workstation",
+  title: "CiteMD - clinical evidence workstation",
   description:
     "A clinical-evidence RAG that answers with grounded citations and abstains when the evidence is weak. Research and evaluation only, not for clinical use.",
 };
