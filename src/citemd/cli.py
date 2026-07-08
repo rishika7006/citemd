@@ -409,5 +409,43 @@ def eval_ablation(
         typer.echo(f"Charts: {rc}  {cal}  {ab}")
 
 
+@eval_app.command("faithfulness")
+def eval_faithfulness(
+    dataset: str = typer.Option(..., "--dataset", help="MIRAGE dataset (needs source ingest)."),
+    sample: Optional[int] = typer.Option(
+        60, "--sample", help="Deterministic random N-question subset (representative)."
+    ),
+    seed: int = typer.Option(0, "--seed", help="Sampling seed."),
+    judge_model: Optional[str] = typer.Option(
+        None, "--judge-model", help="Judge model id (default: same as generation)."
+    ),
+    out: Optional[str] = typer.Option(None, "--out", help="JSONL artifact (append + resume)."),
+) -> None:
+    """Judge whether each answer's cited passages actually support it (citation faithfulness).
+
+    Calls the LLM once to answer and once per cited passage to judge (may incur API cost). Using
+    the same model to judge its own citations is a known bias; pass --judge-model to vary it.
+    """
+    from citemd.eval.faithfulness import run_faithfulness, score_faithfulness
+    from citemd.eval.mirage import load_dataset
+    from citemd.generate.client import OpenAICompatibleClient
+    from citemd.pipeline import PipelineConfig, make_default_llm
+
+    items = load_dataset(dataset, get_settings().data_dir, sample=sample, seed=seed)
+    llm = make_default_llm()
+    judge = OpenAICompatibleClient(model=judge_model) if judge_model else llm
+    out_path = out or f"{get_settings().artifacts_dir}/faithfulness_{dataset}.jsonl"
+
+    typer.echo(f"Judging citation faithfulness on {len(items)} {dataset} answers...")
+    records = run_faithfulness(
+        items, llm, judge, config=PipelineConfig(allow_abstain=False), out_path=out_path
+    )
+    s = score_faithfulness(records)
+    typer.echo(f"\nn={s['n']}  judge={getattr(judge, 'model', '')}")
+    typer.echo(f"citation coverage (answers citing >=1 passage): {s['coverage'].as_pct()}")
+    typer.echo(f"answer support rate (>=1 cited supports): {s['answer_support_rate'].as_pct()}")
+    typer.echo(f"citation support rate (per cited passage): {s['citation_support_rate'].as_pct()}")
+
+
 if __name__ == "__main__":  # pragma: no cover
     app()
