@@ -1,5 +1,8 @@
 # CiteMD
 
+[![CI](https://github.com/rishika7006/citemd/actions/workflows/ci.yml/badge.svg)](https://github.com/rishika7006/citemd/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 CiteMD is an open-source clinical-evidence RAG that answers medical research questions with
 grounded citations and abstains when the retrieved evidence is weak, and it measures that
 behavior on the MIRAGE benchmark.
