@@ -27,8 +27,9 @@ artifacts/
 *.duckdb
 models/
 
-# Internal planning doc (personal career framing; not for the public repo)
+# Internal planning / handoff docs (personal framing; not for the public repo)
 PROJECT_BRIEF.md
+HANDOFF.md
 
 # OS / editor
 .DS_Store
