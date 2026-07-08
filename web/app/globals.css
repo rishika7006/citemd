@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Editorial research palette. Warm off-white paper, ink text, a single deep-teal accent, and a
+  clay warm tone reserved for abstention emphasis. Status hues are used sparingly. Dark mode is
+  a separately chosen set of steps against a warm near-black surface, not an inversion.
+*/
+:root {
+  --paper: #f2eee3;
+  --raised: #fbf9f2;
+  --sunk: #eae5d7;
+  --ink: #1b1a15;
+  --muted: #6c675b;
+  --faint: #8f8a7c;
+  --line: #ddd6c5;
+  --accent: #1c6b66;
+  --accent-soft: #d9e6e4;
+  --warm: #a4502c;
+  --good: #2f6b4a;
+  --warn: #8a6414;
+  --bad: #9a3b2c;
+}
+
+:root[data-theme="dark"] {
+  --paper: #14120d;
+  --raised: #1c1913;
+  --sunk: #0f0d09;
+  --ink: #ece7d9;
+  --muted: #a19b8b;
+  --faint: #837e6f;
+  --line: #2c281f;
+  --accent: #5cb3ac;
+  --accent-soft: #17322f;
+  --warm: #d0865c;
+  --good: #6bbd8f;
+  --warn: #d0a94a;
+  --bad: #d3735f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #14120d;
+    --raised: #1c1913;
+    --sunk: #0f0d09;
+    --ink: #ece7d9;
+    --muted: #a19b8b;
+    --faint: #837e6f;
+    --line: #2c281f;
+    --accent: #5cb3ac;
+    --accent-soft: #17322f;
+    --warm: #d0865c;
+    --good: #6bbd8f;
+    --warn: #d0a94a;
+    --bad: #d3735f;
+  }
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Citation marker rendered inline in the answer prose. */
+.cite {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66em;
+  line-height: 0;
+  color: var(--accent);
+  vertical-align: 0.35em;
+  cursor: pointer;
+  padding: 0 0.05em 0 0.15em;
+}
+.cite:hover {
+  text-decoration: underline;
+}
+
+/* Highlighted supporting span inside an evidence passage. */
+mark.support {
+  background: var(--accent-soft);
+  color: inherit;
+  padding: 0.05em 0.1em;
+  border-radius: 2px;
+  box-decoration-break: clone;
+}
+
+::selection {
+  background: var(--accent-soft);
+}

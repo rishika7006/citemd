@@ -1,0 +1,82 @@
+[
+  {
+    "id": "demo-1",
+    "dataset": "pubmedqa",
+    "question": "Does regular low-dose aspirin use reduce the long-term risk of colorectal cancer?",
+    "options": { "A": "yes", "B": "no", "C": "maybe" },
+    "gold": "A",
+    "predicted": "A",
+    "abstained": false,
+    "abstain_reason": "",
+    "confidence": 0.86,
+    "retrieval_mode": "hybrid + rerank",
+    "answer_text": "Yes. In a long-term follow-up of randomized trials, regular low-dose aspirin was associated with a reduced incidence of colorectal cancer, with the benefit emerging after about ten years of follow-up [1]. A pooled cohort analysis reported a similar direction of effect, though absolute risk reduction was modest [2].",
+    "rationale": "Both cited passages report a reduction in colorectal cancer incidence with sustained low-dose aspirin use.",
+    "citations": [
+      { "marker": 1, "source_id": "pmid:20970847", "title": "Long-term effect of aspirin on colorectal cancer incidence and mortality", "section": "Results", "score": 4.9, "uri": "https://pubmed.ncbi.nlm.nih.gov/20970847/" },
+      { "marker": 2, "source_id": "pmid:21144578", "title": "Aspirin use and risk of colorectal cancer in a prospective cohort", "section": "Results", "score": 3.1, "uri": "https://pubmed.ncbi.nlm.nih.gov/21144578/" }
+    ],
+    "contexts": [
+      { "marker": 1, "source_id": "pmid:20970847", "title": "Long-term effect of aspirin on colorectal cancer incidence and mortality", "section": "Results", "score": 4.9, "cited": true, "text": "In a pooled analysis of randomized trials with long-term follow-up, allocation to aspirin reduced the 20-year risk of colorectal cancer. The reduction became apparent only after approximately ten years and was consistent across trial populations.", "support": "allocation to aspirin reduced the 20-year risk of colorectal cancer" },
+      { "marker": 2, "source_id": "pmid:21144578", "title": "Aspirin use and risk of colorectal cancer in a prospective cohort", "section": "Results", "score": 3.1, "cited": true, "text": "Regular aspirin use was associated with a lower incidence of colorectal cancer in this prospective cohort, although the absolute risk difference was small and confined to longer durations of use.", "support": "Regular aspirin use was associated with a lower incidence of colorectal cancer" },
+      { "marker": 3, "source_id": "pmid:19910909", "title": "Aspirin and gastrointestinal bleeding risk", "section": "Discussion", "score": 1.2, "cited": false, "text": "Long-term aspirin use carries an increased risk of upper gastrointestinal bleeding, which must be weighed against any chemopreventive benefit.", "support": null },
+      { "marker": 4, "source_id": "pmid:18443021", "title": "NSAID use and adenoma recurrence", "section": "Results", "score": 0.9, "cited": false, "text": "Non-aspirin NSAIDs reduced adenoma recurrence in a randomized prevention trial but were limited by cardiovascular adverse events.", "support": null },
+      { "marker": 5, "source_id": "pmid:22321896", "title": "Screening colonoscopy and colorectal cancer mortality", "section": "Results", "score": 0.7, "cited": false, "text": "Screening colonoscopy was associated with reduced colorectal cancer mortality in a large observational study.", "support": null }
+    ],
+    "gold_retrieved": true,
+    "gold_rank": 1,
+    "kvgate": { "enabled": true, "cache": "miss", "provider": "anthropic", "model": "claude-haiku-4-5", "latency_ms": 934, "cost_usd": 0.0022 }
+  },
+  {
+    "id": "demo-2",
+    "dataset": "pubmedqa",
+    "question": "Is vitamin D supplementation effective for preventing acute respiratory tract infections in the general population?",
+    "options": { "A": "yes", "B": "no", "C": "maybe" },
+    "gold": "C",
+    "predicted": "C",
+    "abstained": false,
+    "abstain_reason": "",
+    "confidence": 0.44,
+    "retrieval_mode": "hybrid + rerank",
+    "answer_text": "The evidence is mixed. A meta-analysis of randomized trials found a small overall protective effect that was concentrated in participants with baseline deficiency, and not clearly present otherwise [1]. Effect sizes varied with dosing schedule [1].",
+    "rationale": "The cited meta-analysis reports a subgroup-dependent effect rather than a consistent general-population benefit, which maps to maybe.",
+    "citations": [
+      { "marker": 1, "source_id": "pmid:28202713", "title": "Vitamin D supplementation to prevent acute respiratory infections: systematic review and meta-analysis", "section": "Results", "score": 4.2, "uri": "https://pubmed.ncbi.nlm.nih.gov/28202713/" }
+    ],
+    "contexts": [
+      { "marker": 1, "source_id": "pmid:28202713", "title": "Vitamin D supplementation to prevent acute respiratory infections: systematic review and meta-analysis", "section": "Results", "score": 4.2, "cited": true, "text": "Vitamin D supplementation reduced the risk of acute respiratory tract infection overall, but the protective effect was strongest among participants with baseline 25-hydroxyvitamin D below 25 nmol per litre and was attenuated in those who were replete. Daily or weekly dosing appeared more effective than bolus dosing.", "support": "the protective effect was strongest among participants with baseline 25-hydroxyvitamin D below 25 nmol per litre and was attenuated in those who were replete" },
+      { "marker": 2, "source_id": "pmid:31441540", "title": "Vitamin D status and respiratory outcomes in a cohort", "section": "Results", "score": 2.0, "cited": false, "text": "Lower serum vitamin D was associated with more frequent respiratory infections in an observational cohort, but causality could not be established.", "support": null },
+      { "marker": 3, "source_id": "pmid:33471777", "title": "Bolus vitamin D and infection outcomes", "section": "Results", "score": 1.1, "cited": false, "text": "A trial of high-dose bolus vitamin D did not reduce respiratory infection incidence in older adults.", "support": null },
+      { "marker": 4, "source_id": "pmid:29080013", "title": "Vitamin D and asthma exacerbations", "section": "Results", "score": 0.8, "cited": false, "text": "Vitamin D reduced the rate of asthma exacerbations requiring systemic corticosteroids in a subgroup analysis.", "support": null },
+      { "marker": 5, "source_id": "pmid:26903338", "title": "Micronutrients and immune function", "section": "Discussion", "score": 0.5, "cited": false, "text": "Several micronutrients including vitamin D contribute to immune function, though supplementation effects in replete individuals are uncertain.", "support": null }
+    ],
+    "gold_retrieved": true,
+    "gold_rank": 1,
+    "kvgate": { "enabled": true, "cache": "exact", "provider": "anthropic", "model": "claude-haiku-4-5", "latency_ms": 41, "cost_usd": 0.0 }
+  },
+  {
+    "id": "demo-3",
+    "dataset": "pubmedqa",
+    "question": "Does intermittent fasting improve long-term cardiovascular mortality compared with continuous calorie restriction?",
+    "options": { "A": "yes", "B": "no", "C": "maybe" },
+    "gold": "C",
+    "predicted": null,
+    "abstained": true,
+    "abstain_reason": "low_confidence",
+    "confidence": 0.16,
+    "retrieval_mode": "hybrid + rerank",
+    "answer_text": "",
+    "rationale": "The retrieved passages address short-term weight and metabolic markers, not long-term cardiovascular mortality, so the system abstains rather than guess.",
+    "citations": [],
+    "contexts": [
+      { "marker": 1, "source_id": "pmid:31881139", "title": "Intermittent fasting and metabolic markers: a randomized trial", "section": "Results", "score": 2.3, "cited": false, "text": "Intermittent fasting produced weight loss and improved insulin sensitivity over 12 weeks, comparable to continuous calorie restriction. Cardiovascular events were not assessed.", "support": null },
+      { "marker": 2, "source_id": "pmid:32060194", "title": "Time-restricted eating and body weight", "section": "Results", "score": 1.6, "cited": false, "text": "Time-restricted eating reduced body weight modestly over 12 weeks without a control-group difference in lean mass.", "support": null },
+      { "marker": 3, "source_id": "pmid:30172870", "title": "Caloric restriction and longevity in animal models", "section": "Discussion", "score": 1.0, "cited": false, "text": "Caloric restriction extends lifespan in several animal models; translation to human cardiovascular mortality remains unproven.", "support": null },
+      { "marker": 4, "source_id": "pmid:33531660", "title": "Dietary patterns and cardiovascular risk factors", "section": "Results", "score": 0.7, "cited": false, "text": "Mediterranean dietary patterns were associated with improved lipid profiles in a cohort study.", "support": null },
+      { "marker": 5, "source_id": "pmid:29649367", "title": "Weight loss interventions and blood pressure", "section": "Results", "score": 0.5, "cited": false, "text": "Behavioral weight-loss interventions reduced systolic blood pressure over six months.", "support": null }
+    ],
+    "gold_retrieved": false,
+    "gold_rank": null,
+    "kvgate": { "enabled": true, "cache": "miss", "provider": "anthropic", "model": "claude-haiku-4-5", "latency_ms": 1012, "cost_usd": 0.0019 }
+  }
+]
