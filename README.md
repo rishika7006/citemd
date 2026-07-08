@@ -99,6 +99,15 @@ abstracts: roughly 13.2k topic abstracts as distractors plus the PubMedQA source
 | hybrid + rerank              | 74.3% (69.1-78.9) | 99.0% | 0.068 |
 | hybrid + abstention @ 20%    | 82.1% at 80% coverage | - | - |
 
+### Model robustness (Haiku vs Sonnet)
+
+On a matched 100-question sample (same retrieval, only the model changed), a stronger model did
+not help. Claude Sonnet 4.6 scored 68.0% (95% CI 58.3 to 76.3) versus Claude Haiku 4.5 at 72.0%
+(62.5 to 79.9): indistinguishable on accuracy, and Sonnet was worse calibrated (ECE 0.151 vs
+0.063) with a smaller abstention benefit. CiteMD therefore uses Haiku 4.5, which is cheaper,
+allows a larger sample, and was better calibrated here. Reproduce with
+`CITEMD_LLM_MODEL=claude-sonnet-4-6 citemd eval qa --dataset pubmedqa --sample 100 --seed 0`.
+
 ### Risk-coverage and abstention
 
 Abstaining on the least-confident questions trades a little coverage for lower error on the
