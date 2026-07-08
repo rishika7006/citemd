@@ -42,9 +42,10 @@ def test_run_ablation_produces_four_rows(tmp_path):
     rows = result["rows"]
     assert [r["arm"] for r in rows][:3] == ["vector-only", "hybrid", "hybrid+rerank"]
     assert "abstention" in rows[3]["arm"]
-    # Abstention arm keeps fewer questions and should not increase error.
+    # Abstention is derived from the best retrieval arm and should not increase its error.
+    best_error = min(r["error"] for r in rows[:3])
     assert rows[3]["coverage"] < 1.0
-    assert rows[3]["error"] <= rows[2]["error"] + 1e-9
+    assert rows[3]["error"] <= best_error + 1e-9
 
 
 def test_default_arms_progression():

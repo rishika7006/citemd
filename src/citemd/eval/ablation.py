@@ -88,13 +88,14 @@ def run_ablation(
             "coverage": m["coverage"],
         })
 
-    # +abstention: derive from the last arm (strongest retrieval), abstaining on the riskiest
-    # fraction by confidence.
-    last = arms[-1]
-    items_cb = selective_items(records_by_arm[last.slug])
+    # +abstention: derive from the BEST retrieval arm (highest accuracy), not merely the last,
+    # since a later step (e.g. reranking) is not guaranteed to be an improvement. Abstain on the
+    # riskiest fraction by confidence.
+    best = max(arms, key=lambda a: score_records(records_by_arm[a.slug])["accuracy"])
+    items_cb = selective_items(records_by_arm[best.slug])
     abst = summarize_abstention(items_cb, abstain_fraction)
     rows.append({
-        "arm": f"{last.name} +abstention@{int(round(abstain_fraction * 100))}%",
+        "arm": f"{best.name} +abstention@{int(round(abstain_fraction * 100))}%",
         "n": abst["n_kept"],
         "accuracy": 1.0 - abst["kept_error"],
         "error": abst["kept_error"],
@@ -106,7 +107,7 @@ def run_ablation(
         "records": records_by_arm,
         "abstention": abst,
         "abstain_fraction": abstain_fraction,
-        "derived_from": last.slug,
+        "derived_from": best.slug,
     }
 
 

@@ -17,7 +17,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from citemd.eval.mirage import QuestionItem
 from citemd.generate.client import LLMClient
@@ -40,11 +40,34 @@ class QARecord(BaseModel):
     top_context_score: float = 0.0
     n_citations: int = 0
     n_contexts: int = 0
+    # Retrieval provenance: did the question's gold source abstract(s) reach the context, and
+    # at what rank. Lets the eval report retrieval hit-rate, showing the source is found among
+    # distractors rather than handed to the model.
+    gold_pmids: list[str] = Field(default_factory=list)
+    gold_retrieved: bool = False
+    gold_rank: Optional[int] = None
     model: str = ""
 
 
 def _top_context_score(contexts: Sequence[RetrievedChunk]) -> float:
     return float(contexts[0].score) if contexts else 0.0
+
+
+def _gold_retrieval(
+    pmids: Sequence[str], contexts: Sequence[RetrievedChunk]
+) -> tuple[bool, Optional[int]]:
+    """Whether any gold source (by PMID) reached the context, and the 1-based rank of the first.
+
+    Chunk ``source_id`` is ``pmid:<PMID>``; question ``pmids`` are bare PMIDs. Returns
+    ``(False, None)`` when the question has no PMIDs or none were retrieved.
+    """
+    gold = {f"pmid:{p}" for p in pmids}
+    if not gold:
+        return False, None
+    for rank, c in enumerate(contexts, start=1):
+        if c.source_id in gold:
+            return True, rank
+    return False, None
 
 
 def _load_done(path: Path) -> dict[str, QARecord]:
@@ -106,6 +129,7 @@ def run_qa(
             )
             predicted = ans.option
             correct = (not ans.abstained) and predicted is not None and predicted == item.answer
+            gold_retrieved, gold_rank = _gold_retrieval(item.pmids, ans.contexts)
             rec = QARecord(
                 dataset=item.dataset,
                 qid=item.qid,
@@ -118,6 +142,9 @@ def run_qa(
                 top_context_score=_top_context_score(ans.contexts),
                 n_citations=len(ans.citations),
                 n_contexts=len(ans.contexts),
+                gold_pmids=list(item.pmids),
+                gold_retrieved=gold_retrieved,
+                gold_rank=gold_rank,
                 model=ans.model,
             )
             records.append(rec)
@@ -156,3 +183,23 @@ def score_records(records: Sequence[QARecord]) -> dict[str, float]:
 def selective_items(records: Sequence[QARecord]) -> list[tuple[float, bool]]:
     """Extract ``(confidence, correct)`` pairs for the selective-prediction curve."""
     return [(r.confidence, r.correct) for r in records]
+
+
+def retrieval_hit_rate(records: Sequence[QARecord]):
+    """Fraction of questions (that have a gold PMID) whose gold source reached the context.
+
+    Returns a Wilson-interval Proportion. Questions without a gold PMID are excluded, since
+    hit-rate is undefined for them.
+    """
+    from citemd.eval.stats import wilson_interval
+
+    with_gold = [r for r in records if r.gold_pmids]
+    hits = sum(1 for r in with_gold if r.gold_retrieved)
+    return wilson_interval(hits, len(with_gold))
+
+
+def accuracy_ci(records: Sequence[QARecord]):
+    """Accuracy as a Wilson-interval Proportion over all records (abstentions count wrong)."""
+    from citemd.eval.stats import wilson_interval
+
+    return wilson_interval(sum(1 for r in records if r.correct), len(records))

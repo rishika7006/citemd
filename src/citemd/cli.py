@@ -295,8 +295,15 @@ def eval_qa(
     and re-runs resume, so a stopped run is never repeated.
     """
     from citemd.eval.mirage import load_dataset
-    from citemd.eval.qa import run_qa, score_records, selective_items
+    from citemd.eval.qa import (
+        accuracy_ci,
+        retrieval_hit_rate,
+        run_qa,
+        score_records,
+        selective_items,
+    )
     from citemd.eval.selective import summarize_abstention
+    from citemd.eval.stats import calibration
     from citemd.pipeline import PipelineConfig, make_default_llm
 
     items = load_dataset(dataset, get_settings().data_dir, limit=limit, sample=sample, seed=seed)
@@ -309,10 +316,14 @@ def eval_qa(
     )
     records = run_qa(items, make_default_llm(), config=config, out_path=out_path)
     m = score_records(records)
-    typer.echo(
-        f"\nn={m['n']}  accuracy={m['accuracy']:.3f}  "
-        f"coverage={m['coverage']:.3f}  accuracy_answered={m['accuracy_answered']:.3f}"
-    )
+    acc = accuracy_ci(records)
+    hit = retrieval_hit_rate(records)
+    ece = calibration(selective_items(records)).ece
+    typer.echo(f"\nn={m['n']}  accuracy={acc.as_pct()}")
+    typer.echo(f"coverage={m['coverage']:.3f}  accuracy_answered={m['accuracy_answered']:.3f}")
+    if hit.n:
+        typer.echo(f"retrieval hit-rate (gold source in context)={hit.as_pct()}")
+    typer.echo(f"calibration ECE={ece:.3f} (lower is better)")
     abst = summarize_abstention(selective_items(records), abstain_fraction)
     typer.echo(
         f"abstain riskiest {int(round(abstain_fraction * 100))}%: "
@@ -337,9 +348,14 @@ def eval_ablation(
     charts: bool = typer.Option(False, "--charts", help="Also write evaluation charts."),
 ) -> None:
     """Run the full vector -> hybrid -> +rerank -> +abstention ablation and print the table."""
+    import json as _json
+    from pathlib import Path as _Path
+
     from citemd.eval.ablation import format_table, run_ablation
     from citemd.eval.mirage import load_dataset
-    from citemd.eval.qa import selective_items
+    from citemd.eval.qa import accuracy_ci, retrieval_hit_rate, selective_items
+    from citemd.eval.selective import risk_coverage_curve
+    from citemd.eval.stats import calibration
     from citemd.pipeline import make_default_llm
 
     items = load_dataset(dataset, get_settings().data_dir, limit=limit, sample=sample, seed=seed)
@@ -350,15 +366,47 @@ def eval_ablation(
     )
     typer.echo("\n" + format_table(result["rows"]))
 
-    if charts:
-        from citemd.eval.charts import plot_ablation, plot_risk_coverage
+    # Per-arm accuracy CIs, retrieval hit-rate, and calibration.
+    typer.echo("\nper-arm detail (95% CI):")
+    for slug, recs in result["records"].items():
+        acc = accuracy_ci(recs)
+        hit = retrieval_hit_rate(recs)
+        ece = calibration(selective_items(recs)).ece
+        hit_s = f"  hit-rate {hit.as_pct()}" if hit.n else ""
+        typer.echo(f"  {slug:<14} accuracy {acc.as_pct()}  ECE {ece:.3f}{hit_s}")
 
-        last = result["derived_from"]
-        rc = plot_risk_coverage(
-            selective_items(result["records"][last]), f"{base}/risk_coverage.png"
-        )
+    # Machine-readable summary (consumed by the frontend / reproducible report).
+    best = result["derived_from"]
+    summary = {
+        "dataset": dataset,
+        "sample": sample,
+        "seed": seed,
+        "abstain_fraction": abstain_fraction,
+        "model": get_settings().llm_model,
+        "best_arm": best,
+        "rows": result["rows"],
+        "arms": {
+            slug: {
+                "accuracy": accuracy_ci(recs).__dict__,
+                "retrieval_hit_rate": retrieval_hit_rate(recs).__dict__,
+                "ece": calibration(selective_items(recs)).ece,
+                "risk_coverage": [p.__dict__ for p in risk_coverage_curve(selective_items(recs))],
+            }
+            for slug, recs in result["records"].items()
+        },
+    }
+    _Path(base).mkdir(parents=True, exist_ok=True)
+    (_Path(base) / "summary.json").write_text(_json.dumps(summary, indent=2))
+    typer.echo(f"\nSummary: {base}/summary.json")
+
+    if charts:
+        from citemd.eval.charts import plot_ablation, plot_calibration, plot_risk_coverage
+
+        best_items = selective_items(result["records"][best])
+        rc = plot_risk_coverage(best_items, f"{base}/risk_coverage.png")
+        cal = plot_calibration(best_items, f"{base}/calibration.png")
         ab = plot_ablation(result["rows"], f"{base}/ablation.png")
-        typer.echo(f"\nCharts: {rc}  {ab}")
+        typer.echo(f"Charts: {rc}  {cal}  {ab}")
 
 
 if __name__ == "__main__":  # pragma: no cover

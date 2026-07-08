@@ -52,6 +52,39 @@ def plot_risk_coverage(
     return out_path
 
 
+def plot_calibration(
+    items: Sequence[tuple[float, bool]],
+    out_path: str | Path,
+    *,
+    n_bins: int = 10,
+    title: str = "Reliability (confidence vs accuracy)",
+) -> Path:
+    """Reliability diagram: mean confidence vs empirical accuracy per bin, with ECE in the title."""
+    plt = _require_matplotlib()
+    from citemd.eval.stats import calibration
+
+    cal = calibration(items, n_bins=n_bins)
+    xs = [b.mean_confidence for b in cal.bins if b.n > 0]
+    ys = [b.accuracy for b in cal.bins if b.n > 0]
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.plot([0, 1], [0, 1], linestyle="--", linewidth=1, color="#999", label="perfect")
+    ax.plot(xs, ys, marker="o", linewidth=1, color="#3b6ea5", label="observed")
+    ax.set_xlabel("mean predicted confidence")
+    ax.set_ylabel("empirical accuracy")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_title(f"{title}\nECE = {cal.ece:.3f}, n = {cal.n}")
+    ax.legend(loc="upper left", fontsize=8)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
+
+
 def plot_ablation(rows: Sequence[dict], out_path: str | Path) -> Path:
     """Bar chart of accuracy per ablation arm; save to ``out_path``."""
     plt = _require_matplotlib()
