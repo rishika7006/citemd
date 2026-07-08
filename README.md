@@ -146,6 +146,10 @@ exercise prefix-aware routing and KV offload; KVGate benchmarked those separatel
 evaluation numbers above were produced by calling Anthropic directly for a stable, reproducible
 setup; the gateway path is the demonstration of the composition.
 
+A captured run of CiteMD calling through a running KVGate, showing a response-cache hit turn an
+identical request from a real call into a 2 ms cache hit, is in
+[docs/kvgate-demo.md](docs/kvgate-demo.md).
+
 ## Web app (Evidence Workstation)
 
 A front end in [`web/`](web/) presents the cited answer, the supporting spans in each source,
