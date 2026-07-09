@@ -235,6 +235,9 @@ citemd eval faithfulness --dataset pubmedqa --sample 60 --seed 0
 The MIRAGE datasets are class-ordered, so use `--sample` (a seeded random subset), not `--limit`
 (the first N in file order), for representative evaluation. Runs cache per question and resume.
 
+The self-hosted serving benchmark (KVGate + vLLM + LMCache on GPU) is reproduced with
+[benchmarks/MODE_B_RUNBOOK.md](benchmarks/MODE_B_RUNBOOK.md).
+
 ## Dataset and safety
 
 - Public, non-PHI data only. No real patient records, no credentialed or PHI datasets.
@@ -253,12 +256,18 @@ The MIRAGE datasets are class-ordered, so use `--sample` (a seeded random subset
   is not a guaranteed probability.
 - Citation faithfulness uses an LLM judge; a judge at least as strong as the generator is
   preferable, and using the same model to judge its own citations is a known bias.
+- A stronger reader was tested and did not help: on a matched 100-question sample, Claude Sonnet
+  4.6 was within noise of Haiku 4.5 on accuracy and worse calibrated, so CiteMD uses Haiku.
+- Figure-grounded answering was tested and not shipped: a general vision model leaned on the
+  figure caption rather than reading the image (it misread specialized radiology figures
+  unaided), so shipping it as image reasoning would overclaim. The multimodal story is carried
+  by the serving benchmark, which uses real clinical figures to measure the serving stack.
 
 ## Roadmap
 
-- Second dataset (BioASQ) and a stronger-model spot-check.
-- Multimodal table and figure retrieval from open-access clinical PDFs.
-- A live `/ask` API behind the web app and a self-hosted KVGate serving demo.
+- Second evaluation dataset (BioASQ).
+- A live `/ask` API behind the web app.
+- Figure-grounded answering with a vision model strong enough to read clinical images reliably.
 
 ## Development
 
