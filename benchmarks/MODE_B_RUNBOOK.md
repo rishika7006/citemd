@@ -42,7 +42,9 @@ kvgate run -c config/gpu.runpod.yaml --port 8080 &     # routing.strategy: round
 python loadtest/multimodal_bench.py --host http://localhost:8080 --model vlm \
   --images-dir images --images 12 --sessions 120 --turns 1 --concurrency 8 --out D.json   # round_robin
 # flip routing.strategy to prefix_kv_aware, restart gateway, rerun to E.json
-python scripts/compare_results.py D=D.json E=E.json
+# D.json (round_robin) and E.json (prefix_kv_aware) are pulled back and compared locally
+# (TTFT p50/p95, throughput, routing affinity); rendered charts and the summary are in
+# results/modeb.
 ```
 
 ## 3. Arms recorded for CiteMD
