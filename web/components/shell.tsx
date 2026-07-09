@@ -5,13 +5,19 @@ import type { AnswerRecord, EvalSummary, ServingSummary } from "@/lib/types";
 import { Workstation } from "@/components/workstation";
 import { EvaluationView } from "@/components/evaluation";
 import { ServingView } from "@/components/serving";
+import { DocsView } from "@/components/docs";
+import { AboutSections } from "@/components/about";
+import { RepoLink, ContactMenu } from "@/components/nav-actions";
 
-type Tab = "workstation" | "evaluation" | "serving";
+type Tab = "workstation" | "serving" | "evaluation" | "docs";
+
+const TABS: Tab[] = ["workstation", "serving", "evaluation", "docs"];
 
 const TAB_LABEL: Record<Tab, string> = {
   workstation: "Workstation",
-  evaluation: "Evaluation",
   serving: "Serving Path",
+  evaluation: "Evaluation",
+  docs: "Docs",
 };
 
 function ThemeToggle() {
@@ -54,16 +60,16 @@ export function Shell({
   return (
     <div className="min-h-screen">
       <header className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-5 flex items-baseline justify-between gap-6">
+        <div className="mx-auto max-w-6xl px-6 py-5 flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
           <div className="flex items-baseline gap-4">
             <span className="font-serif text-2xl tracking-tight">CiteMD</span>
-            <span className="hidden sm:inline text-sm text-muted">
+            <span className="hidden md:inline text-sm text-muted">
               Clinical Evidence Workstation
             </span>
           </div>
           <div className="flex items-center gap-5">
             <nav className="flex gap-4 text-sm">
-              {(["workstation", "evaluation", "serving"] as Tab[]).map((t) => (
+              {TABS.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -78,6 +84,11 @@ export function Shell({
                 </button>
               ))}
             </nav>
+            <span className="hidden sm:block h-4 w-px bg-line" aria-hidden="true" />
+            <div className="hidden sm:flex items-center gap-5">
+              <RepoLink />
+              <ContactMenu />
+            </div>
             <ThemeToggle />
           </div>
         </div>
@@ -85,8 +96,10 @@ export function Shell({
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         {tab === "workstation" && <Workstation answers={answers} />}
-        {tab === "evaluation" && <EvaluationView data={evalData} />}
         {tab === "serving" && <ServingView data={servingData} />}
+        {tab === "evaluation" && <EvaluationView data={evalData} />}
+        {tab === "docs" && <DocsView />}
+        {tab !== "docs" && <AboutSections />}
       </main>
 
       <footer className="border-t border-line mt-16">

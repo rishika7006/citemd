@@ -170,6 +170,57 @@ function Passage({ c, active }: { c: Context; active: boolean }) {
   );
 }
 
+const STEPS: { k: string; label: string; body: string }[] = [
+  {
+    k: "retrieve",
+    label: "Retrieve",
+    body: "Dense vector search plus keyword search over a PubMed index, fused and reranked to pull the most relevant abstracts.",
+  },
+  {
+    k: "answer",
+    label: "Answer",
+    body: "A language model writes the answer using only those passages, with an inline citation on every claim.",
+  },
+  {
+    k: "abstain",
+    label: "Abstain",
+    body: "A confidence gate declines the least-supported questions instead of risking a confident wrong answer.",
+  },
+  {
+    k: "serve",
+    label: "Serve",
+    body: "Generation runs through KVGate, and self-hosted through vLLM with LMCache, which offloads the GPU KV cache under memory pressure.",
+  },
+];
+
+function Intro() {
+  return (
+    <div className="mb-8 border-b border-line pb-8">
+      <p className="font-serif text-[1.28rem] leading-relaxed max-w-reading">
+        CiteMD answers clinical research questions from published medical literature and shows its
+        work. Every claim carries a citation to the passage it came from, and when the evidence is
+        too thin it declines to answer instead of guessing.
+      </p>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map((s, i) => (
+          <div key={s.k} className="rounded-md border border-line bg-raised p-3.5">
+            <div className="flex items-baseline gap-2 mb-1.5">
+              <span className="font-mono text-xs text-accent">{i + 1}</span>
+              <span className="text-sm font-medium">{s.label}</span>
+            </div>
+            <p className="text-[13px] leading-relaxed text-muted">{s.body}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-sm text-muted max-w-reading">
+        The Serving Path tab reports measured latency and throughput from KVGate and LMCache. The
+        Evaluation tab reports accuracy, calibration, and abstention with confidence intervals. Pick
+        an example below to see a grounded answer with its supporting spans.
+      </p>
+    </div>
+  );
+}
+
 export function Workstation({ answers }: { answers: AnswerRecord[] }) {
   const [idx, setIdx] = useState(0);
   const [active, setActive] = useState<number | null>(null);
@@ -187,6 +238,7 @@ export function Workstation({ answers }: { answers: AnswerRecord[] }) {
 
   return (
     <div>
+      <Intro />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-wider text-muted mb-2">example question</div>
         <div className="flex flex-col gap-1.5">
