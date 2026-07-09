@@ -1,0 +1,66 @@
+{
+  "hardware": "2x NVIDIA A40 (46 GB), RunPod",
+  "stack": "llava-onevision-qwen2-7b (vLLM 0.23.0, LMCache 0.5.0 MP mode)",
+  "workload": "48 open-access clinical radiology figures (ROCO), through KVGate",
+  "cache_hit": {
+    "miss_ms": 561,
+    "hit_ms": 2,
+    "note": "identical request through KVGate response cache"
+  },
+  "routing": {
+    "round_robin": {
+      "ttft_p50": 522,
+      "ttft_p95": 3930,
+      "thr": 1.89
+    },
+    "prefix_aware": {
+      "ttft_p50": 362,
+      "ttft_p95": 2068,
+      "thr": 2.92,
+      "affinity": 0.9944
+    },
+    "ttft_p50_delta": -31,
+    "ttft_p95_delta": -47,
+    "thr_delta": 54
+  },
+  "lmcache": {
+    "arms": [
+      {
+        "name": "baseline (GPU only)",
+        "ttft_p50": 358.0,
+        "ttft_p95": 1656.0,
+        "thr": 1.73,
+        "hit": null
+      },
+      {
+        "name": "+ CPU L1",
+        "ttft_p50": 239.0,
+        "ttft_p95": 1177.0,
+        "thr": 1.77,
+        "hit": 83
+      },
+      {
+        "name": "+ CPU L1 + Redis L2",
+        "ttft_p50": 295.0,
+        "ttft_p95": 578.0,
+        "thr": 2.26,
+        "hit": 100
+      }
+    ],
+    "ttft_p50_delta": -33,
+    "ttft_p95_delta": -65,
+    "thr_delta": 31
+  },
+  "crossover": {
+    "no_pressure": {
+      "baseline": 102.0,
+      "l1": 127.0,
+      "l1l2": 154.0
+    },
+    "pressure": {
+      "baseline": 358.0,
+      "l1": 239.0,
+      "l1l2": 295.0
+    }
+  }
+}

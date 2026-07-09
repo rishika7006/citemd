@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AnswerRecord, EvalSummary } from "@/lib/types";
+import type { AnswerRecord, EvalSummary, ServingSummary } from "@/lib/types";
 import { Workstation } from "@/components/workstation";
 import { EvaluationView } from "@/components/evaluation";
+import { ServingView } from "@/components/serving";
 
-type Tab = "workstation" | "evaluation";
+type Tab = "workstation" | "evaluation" | "serving";
+
+const TAB_LABEL: Record<Tab, string> = {
+  workstation: "Workstation",
+  evaluation: "Evaluation",
+  serving: "Serving Path",
+};
 
 function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
@@ -37,9 +44,11 @@ function ThemeToggle() {
 export function Shell({
   answers,
   evalData,
+  servingData,
 }: {
   answers: AnswerRecord[];
   evalData: EvalSummary;
+  servingData: ServingSummary;
 }) {
   const [tab, setTab] = useState<Tab>("workstation");
   return (
@@ -54,7 +63,7 @@ export function Shell({
           </div>
           <div className="flex items-center gap-5">
             <nav className="flex gap-4 text-sm">
-              {(["workstation", "evaluation"] as Tab[]).map((t) => (
+              {(["workstation", "evaluation", "serving"] as Tab[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -65,7 +74,7 @@ export function Shell({
                       : "border-transparent text-muted hover:text-ink")
                   }
                 >
-                  {t === "workstation" ? "Workstation" : "Evaluation"}
+                  {TAB_LABEL[t]}
                 </button>
               ))}
             </nav>
@@ -75,11 +84,9 @@ export function Shell({
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
-        {tab === "workstation" ? (
-          <Workstation answers={answers} />
-        ) : (
-          <EvaluationView data={evalData} />
-        )}
+        {tab === "workstation" && <Workstation answers={answers} />}
+        {tab === "evaluation" && <EvaluationView data={evalData} />}
+        {tab === "serving" && <ServingView data={servingData} />}
       </main>
 
       <footer className="border-t border-line mt-16">

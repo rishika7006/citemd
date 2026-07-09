@@ -94,3 +94,28 @@ export interface EvalSummary {
   calibration: CalibrationBin[];
   commands: string[];
 }
+
+// Self-hosted serving benchmark (Mode B): KVGate + vLLM + LMCache on GPU.
+export interface ServingSummary {
+  hardware: string;
+  stack: string;
+  workload: string;
+  cache_hit: { miss_ms: number; hit_ms: number; note: string };
+  routing: {
+    round_robin: { ttft_p50: number; ttft_p95: number; thr: number };
+    prefix_aware: { ttft_p50: number; ttft_p95: number; thr: number; affinity: number };
+    ttft_p50_delta: number;
+    ttft_p95_delta: number;
+    thr_delta: number;
+  };
+  lmcache: {
+    arms: { name: string; ttft_p50: number; ttft_p95: number; thr: number; hit: number | null }[];
+    ttft_p50_delta: number;
+    ttft_p95_delta: number;
+    thr_delta: number;
+  };
+  crossover: {
+    no_pressure: { baseline: number; l1: number; l1l2: number };
+    pressure: { baseline: number; l1: number; l1l2: number };
+  };
+}
