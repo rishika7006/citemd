@@ -159,6 +159,21 @@ A captured run of CiteMD calling through a running KVGate, showing a response-ca
 identical request from a real call into a 2 ms cache hit, is in
 [docs/kvgate-demo.md](docs/kvgate-demo.md).
 
+### Self-hosted serving benchmark (KVGate + vLLM + LMCache, GPU)
+
+To show what KVGate and LMCache add for self-hosted multimodal serving, CiteMD was run against a
+real multimodal clinical workload (48 open-access clinical radiology figures) through KVGate to
+two vLLM replicas with LMCache MP mode (CPU L1 + Redis L2), on 2x A40. Full write-up and charts:
+[results/modeb](results/modeb/README.md).
+
+- **KVGate prefix-aware routing** cut TTFT p50 by 31% (522 to 362 ms), tail latency p95 by 47%,
+  and raised throughput by 54% (1.89 to 2.92 rps), at 99.4% routing affinity.
+- **LMCache under GPU memory pressure** (KV capped so it overflows GPU): CPU L1 cut TTFT p50 by
+  33% (358 to 239 ms); adding Redis L2 cut tail latency p95 by 65% (1656 to 578 ms) and raised
+  throughput by 31%.
+- **When the KV fits GPU, LMCache is net overhead** (baseline 102 ms vs L1 127 ms). It is worth
+  enabling by the working-set-to-GPU ratio, not by default. Reported honestly, not hidden.
+
 ## Web app (Evidence Workstation)
 
 A front end in [`web/`](web/) presents the cited answer, the supporting spans in each source,

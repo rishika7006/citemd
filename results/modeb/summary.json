@@ -1,0 +1,60 @@
+{
+  "hardware": "2x NVIDIA A40 (46 GB), RunPod",
+  "model": "llava-onevision-qwen2-7b (vLLM 0.23.0, LMCache 0.5.0 MP mode)",
+  "workload": "48 open-access clinical radiology figures (ROCO), through KVGate",
+  "pressure": {
+    "baseline": {
+      "ttft_p50": 358.0,
+      "ttft_p95": 1656.0,
+      "thr": 1.73,
+      "e2e_p50": 1394.0
+    },
+    "l1_only": {
+      "ttft_p50": 239.0,
+      "ttft_p95": 1177.0,
+      "thr": 1.77,
+      "e2e_p50": 1374.0
+    },
+    "l1l2": {
+      "ttft_p50": 295.0,
+      "ttft_p95": 578.0,
+      "thr": 2.26,
+      "e2e_p50": 1113.0
+    }
+  },
+  "no_pressure": {
+    "baseline": {
+      "ttft_p50": 102.0,
+      "ttft_p95": 145.0,
+      "thr": 2.84,
+      "e2e_p50": 759.0
+    },
+    "l1_only": {
+      "ttft_p50": 127.0,
+      "ttft_p95": 173.0,
+      "thr": 2.47,
+      "e2e_p50": 894.0
+    },
+    "l1l2": {
+      "ttft_p50": 154.0,
+      "ttft_p95": 460.0,
+      "thr": 2.09,
+      "e2e_p50": 1006.0
+    }
+  },
+  "routing": {
+    "round_robin": {
+      "ttft_p50": 522,
+      "ttft_p95": 3930,
+      "thr": 1.89,
+      "affinity": null
+    },
+    "prefix_kv_aware": {
+      "ttft_p50": 362,
+      "ttft_p95": 2068,
+      "thr": 2.92,
+      "affinity": 0.9944
+    }
+  },
+  "notes": "Pressure = num-gpu-blocks-override 2560 (GPU KV overflows). No-pressure = GPU_UTIL 0.5 (fits)."
+}
