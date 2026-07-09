@@ -7,6 +7,7 @@ const serif = Newsreader({
   variable: "--font-serif",
   display: "swap",
   style: ["normal", "italic"],
+  adjustFontFallback: false,
 });
 const sans = Public_Sans({
   subsets: ["latin"],
