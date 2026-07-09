@@ -40,6 +40,9 @@ rigorously evaluated, reproducible artifact with a sharp trustworthiness and abs
 
 ## App preview
 
+**Live demo:** [citemd-gamma.vercel.app](https://citemd-gamma.vercel.app) (precomputed answers, no
+API key, no cost).
+
 The Evidence Workstation: a cited answer with its supporting spans highlighted in each source, a
 decision bar (answer or abstention, confidence, retrieval mode, whether the gold source was
 retrieved), and the KVGate serving path.
@@ -179,7 +182,8 @@ two vLLM replicas with LMCache MP mode (CPU L1 + Redis L2), on 2x A40. Full writ
 A front end in [`web/`](web/) presents the cited answer, the supporting spans in each source,
 the abstention decision and confidence, the retrieval mode, and the KVGate serving metadata,
 plus an evaluation view with the interactive risk-coverage curve, calibration, and the ablation.
-It runs in demo mode by default (precomputed answers, no key, no model call).
+It runs in demo mode by default (precomputed answers, no key, no model call). Live at
+[citemd-gamma.vercel.app](https://citemd-gamma.vercel.app).
 
 ```bash
 cd web && npm install && npm run dev   # http://localhost:3000
